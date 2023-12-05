@@ -1,0 +1,85 @@
+pip install flask
+from flask import Flask, render_template, request
+import RPi.GPIO as GPIO
+
+app = Flask(__name__)
+
+# Set GPIO mode to BCM
+GPIO.setmode(GPIO.BCM)
+
+# Define GPIO pins for devices
+led_pin = 18
+# Add more pins for other devices as needed
+
+# Setup GPIO pins
+GPIO.setup(led_pin, GPIO.OUT)
+# Setup additional pins for other devices
+
+# Function to turn on/off the LED
+def toggle_led(state):
+    GPIO.output(led_pin, state)
+
+# Home route
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Route to control devices
+@app.route('/control', methods=['POST'])
+def control():
+    action = request.form['action']
+
+    if action == 'on':
+        toggle_led(True)
+        # Add more actions for other devices
+    elif action == 'off':
+        toggle_led(False)
+        # Add more actions for other devices
+
+    return render_template('index.html')
+
+# Route to display the image
+@app.route('/image')
+def display_image():
+    # You can replace 'path/to/image.jpg' with the actual path to your image file
+    image_path = 'path/to/image.jpg'
+    return render_template('image.html', image_path=image_path)
+
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0')
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Control</title>
+</head>
+<body>
+    <h1>Raspberry Pi Control</h1>
+    <form action="/control" method="post">
+        <button type="submit" name="action" value="on">Turn On</button>
+        <button type="submit" name="action" value="off">Turn Off</button>
+    </form>
+    <br>
+    <a href="/image">View Image</a>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Image</title>
+</head>
+<body>
+    <h1>Raspberry Pi Image</h1>
+    <img src="{{ image_path }}" alt="Institute Image">
+    <br>
+    <a href="/">Back to Control</a>
+</body>
+</html>
+
+python app.py
+////

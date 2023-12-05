@@ -1,0 +1,110 @@
+#include <M5Stack.h>
+#include <WiFi.h>
+#include <TensorFlowLite_ESP32.h>
+
+// Replace with your WiFi credentials
+const char *ssid = "your_SSID";
+const char *password = "your_PASSWORD";
+
+// TensorFlow model file (converted to .h format)
+#include "your_model.h"
+
+// Face recognition threshold (adjust as needed)
+const float recognitionThreshold = 0.7;
+
+void setup() {
+  M5.begin();
+  M5.Lcd.begin();
+  Serial.begin(115200);
+
+  connectToWiFi();
+
+  // Initialize the camera
+  M5.begin();
+  M5.Lcd.setRotation(3); // adjust rotation if needed
+
+  // Load the TensorFlow model
+  tflInterpreter.begin(your_model);
+
+  Serial.println("System is ready!");
+}
+
+void loop() {
+  // Capture image from camera
+  camera_fb_t *fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Camera capture failed");
+    return;
+  }
+
+  // Perform face recognition
+  float confidence = recognizeFace(fb->buf);
+
+  // Display the result on the screen
+  M5.Lcd.fillScreen(TFT_BLACK);
+  M5.Lcd.setTextSize(2);
+  M5.Lcd.setCursor(10, 10);
+
+  if (confidence >= recognitionThreshold) {
+    M5.Lcd.setTextColor(TFT_GREEN);
+    M5.Lcd.print("Welcome!");
+    // Grant access or perform further actions for authenticated user
+  } else {
+    M5.Lcd.setTextColor(TFT_RED);
+    M5.Lcd.print("Intruder!");
+    // Trigger intruder detection actions
+  }
+
+  M5.Lcd.setTextSize(1);
+  M5.Lcd.setTextColor(TFT_WHITE);
+  M5.Lcd.setCursor(10, 40);
+  M5.Lcd.print("Confidence: ");
+  M5.Lcd.print(confidence);
+
+  delay(3000); // Delay for better visualization (adjust as needed)
+  M5.Lcd.fillScreen(TFT_BLACK);
+
+  esp_camera_fb_return(fb);
+}
+
+void connectToWiFi() {
+  Serial.print("Connecting to WiFi");
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+}
+
+float recognizeFace(uint8_t *imageBuffer) {
+  TfLiteStatus invokeStatus;
+  TfLiteTensor *inputTensor = tflInterpreter.getInputTensor(0);
+  TfLiteTensor *outputTensor = tflInterpreter.getOutputTensor(0);
+
+  // Preprocess the captured image
+  preprocessImage(imageBuffer, inputTensor);
+
+  // Run inference
+  invokeStatus = tflInterpreter.invoke();
+
+  if (invokeStatus != kTfLiteOk) {
+    Serial.println("Inference failed");
+    return 0.0;
+  }
+
+  // Get the confidence score for face recognition
+  float confidence = outputTensor->data.f[0];
+
+  return confidence;
+}
+
+void preprocessImage(uint8_t *imageBuffer, TfLiteTensor *inputTensor) {
+  // Implement image preprocessing based on your model requirements
+  // Convert image data to the format expected by the TensorFlow model
+  // You may need to resize, normalize, and convert to grayscale based on your model
+  // Update the inputTensor data with the preprocessed image data
+}
